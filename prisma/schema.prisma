@@ -1,0 +1,16 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model video {
+  id           Int    @id @default(autoincrement())
+  Title        String @db.VarChar(55)
+  Genre        String @db.VarChar(55)
+  Release_Year Int    @map("Release Year") @db.Year
+  Description  String @db.Text
+}
