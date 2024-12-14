@@ -1,21 +1,25 @@
 import type { LoaderFunction } from "@remix-run/node";
-import { json, redirect } from "@remix-run/node";
+import { redirect } from "@remix-run/node";
 import { PrismaClient } from "@prisma/client";
 
 export const loader: LoaderFunction = async ({ params }) => {
-  const id = parseInt(params.id);
+  const id = params.id ? parseInt(params.id, 10) : NaN;
+
+  if (isNaN(id)) {
+    return redirect("/");
+  }
 
   const prisma = new PrismaClient();
 
   try {
-    const video = await prisma.video.delete({
+    await prisma.video.delete({
       where: {
         id: id,
       },
     });
 
-    redirect("/");
+    return redirect("/");
   } catch (error) {
-    redirect("/");
+    return redirect("/");
   }
 };

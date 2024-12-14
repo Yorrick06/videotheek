@@ -1,6 +1,6 @@
 import type { ActionArgs, LoaderFunction } from "@remix-run/node";
 import { Form, useActionData, useLoaderData, Link } from "@remix-run/react";
-import { json, redirect } from "@remix-run/node";
+import { redirect } from "@remix-run/node";
 import { PrismaClient } from "@prisma/client";
 import { useState } from "react";
 
@@ -14,23 +14,30 @@ export async function action({ request }: ActionArgs) {
   const description = String(formData.get("Description"));
 
   if (!title || !genre || !release_year || !description) {
-    return json({ error: "All fields are required" }, { status: 400 });
+    return new Response(
+      JSON.stringify({
+        error: "All fields are required",
+      }),
+      { status: 400, headers: { "Content-Type": "application/json" } }
+    );
   }
 
   const releaseYearInt = parseInt(release_year);
   const currentYear = new Date().getFullYear();
 
   if (releaseYearInt < 1900 || releaseYearInt > currentYear) {
-    return json(
-      { error: "Release year must be between 1900 and " + currentYear },
-      { status: 400 }
+    return new Response(
+      JSON.stringify({
+        error: "Release year must be between 1900 and " + currentYear,
+      }),
+      { status: 400, headers: { "Content-Type": "application/json" } }
     );
   }
 
   try {
-      // https://www.prisma.io/docs/orm/prisma-client/queries/crud#update
+    // https://www.prisma.io/docs/orm/prisma-client/queries/crud#update
     const prisma = new PrismaClient();
-    const editVideo = await prisma.video.update({
+    await prisma.video.update({
       where: {
         id: id,
       },
@@ -44,15 +51,23 @@ export async function action({ request }: ActionArgs) {
 
     return redirect("/");
   } catch (error) {
-    return json(
-      { error: "Something went wrong. Please try again." + error },
-      { status: 400 }
+    return new Response(
+      JSON.stringify({
+        error: "Something went wrong. Please try again." + error,
+      }),
+      { status: 400, headers: { "Content-Type": "application/json" } }
     );
   }
 }
 
 export const loader: LoaderFunction = async ({ params }) => {
-  const videoId = parseInt(params.id);
+  const videoId = params.id ? parseInt(params.id, 10) : NaN;
+
+  if (isNaN(videoId)) {
+    return redirect("/");
+  }
+
+  const prisma = new PrismaClient();
   const video = await prisma.video.findUnique({
     where: {
       id: videoId,
@@ -70,8 +85,12 @@ type Video = {
   Description: string;
 };
 
+type ActionData = {
+  error?: string;
+};
+
 export default function EditVideo() {
-  const actionData = useActionData();
+  const actionData = useActionData<ActionData>();
   const errorMessage = actionData?.error;
 
   const { video } = useLoaderData<{ video: Video }>();
@@ -136,7 +155,9 @@ export default function EditVideo() {
           name="Release_Year"
           className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
           value={formData.Release_Year}
-          onChange={(e) => setFormData({ ...formData, Release_Year: Number(e.target.value) })}
+          onChange={(e) =>
+            setFormData({ ...formData, Release_Year: Number(e.target.value) })
+          }
         />
       </div>
       <div className="mb-5">
