@@ -1,7 +1,7 @@
 import type { ActionArgs } from "@remix-run/node";
 import { Form, useActionData, Link } from "@remix-run/react";
 import { json, redirect } from "@remix-run/node";
-import { prisma } from "../utils/prisma.server";
+import { PrismaClient } from "@prisma/client";
 
 export async function action({ request }: ActionArgs) {
   const formData = await request.formData();
@@ -27,6 +27,7 @@ export async function action({ request }: ActionArgs) {
 
   try {
     // https://www.prisma.io/docs/orm/prisma-client/queries/crud#create
+    const prisma = new PrismaClient();
     const newVideo = await prisma.video.create({
       data: {
         Title: title,

@@ -1,7 +1,7 @@
 import type { ActionArgs, LoaderFunction } from "@remix-run/node";
 import { Form, useActionData, useLoaderData, Link } from "@remix-run/react";
 import { json, redirect } from "@remix-run/node";
-import { prisma } from "../utils/prisma.server";
+import { PrismaClient } from "@prisma/client";
 import { useState } from "react";
 
 export async function action({ request }: ActionArgs) {
@@ -28,7 +28,8 @@ export async function action({ request }: ActionArgs) {
   }
 
   try {
-    // https://www.prisma.io/docs/orm/prisma-client/queries/crud#update
+      // https://www.prisma.io/docs/orm/prisma-client/queries/crud#update
+    const prisma = new PrismaClient();
     const editVideo = await prisma.video.update({
       where: {
         id: id,
