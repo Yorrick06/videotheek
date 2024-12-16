@@ -3,6 +3,7 @@ import { Form, useActionData, Link } from "@remix-run/react";
 import { redirect } from "@remix-run/node";
 import { PrismaClient } from "@prisma/client";
 
+// https://www.kirandev.com/remix/use-action-to-handle-form-submission-in-remix
 export async function action({ request }: ActionArgs) {
   const formData = await request.formData();
 
