@@ -1,6 +1,7 @@
 import type { MetaFunction, LoaderFunction } from "@remix-run/node";
 import { PrismaClient } from "@prisma/client";
 import { useLoaderData, Link, Form, useSubmit } from "@remix-run/react";
+import { useState } from "react";
 
 export const meta: MetaFunction = () => {
   return [
@@ -27,6 +28,19 @@ const prisma = new PrismaClient();
 export const loader: LoaderFunction = async ({ request }) => {
   const url = new URL(request.url);
   const q = url.searchParams.get("q") || "";
+
+  const firstDate = url.searchParams.get("firstDate") || "1900";
+  const secondDate = url.searchParams.get("secondDate") || "2024";
+
+  if (firstDate < secondDate) {
+    return new Response(
+      JSON.stringify({
+        error: "Years must be in the correct order",
+      }),
+      { status: 400, headers: { "Content-Type": "application/json" } }
+    );
+  }
+
   // https://www.prisma.io/docs/orm/prisma-client/queries/crud#get-all-records
   const videos = await prisma.video.findMany({
     where: {
@@ -38,16 +52,33 @@ export const loader: LoaderFunction = async ({ request }) => {
   return { videos, q };
 };
 
+type ActionData = {
+  error?: string;
+};
+
+
 export default function Index() {
   const { videos, q } = useLoaderData<LoaderData>();
   const submit = useSubmit();
+
+  const currentYear = new Date().getFullYear();
+
+    const [formData, setFormData] = useState({
+      firstDate: currentYear - 1,
+      secondDate: currentYear,
+    });
+  
+  
+  const actionData = useLoaderData<ActionData>();
+  const errorMessage = actionData?.error;
+  
   return (
     <div>
       <h1 className="text-4xl mb-5 font-bold">Welkom in uw videotheek</h1>
 
       <Link
         to="/movies/new"
-        className="text-gray-900 bg-white border border-gray-300 focus:outline-none hover:bg-gray-100 focus:ring-4 focus:ring-gray-100 font-medium rounded-lg text-sm px-5 py-2.5 me-2 mb-2 dark:bg-gray-800 dark:text-white dark:border-gray-600 dark:hover:bg-gray-700 dark:hover:border-gray-600 dark:focus:ring-gray-700"
+        className="text-gray-900 bg-white border border-gray-300 focus:outline-none hover:bg-gray-100 focus:ring-4 focus:ring-gray-100 font-bold rounded-lg text-sm px-5 py-2.5 me-2 mb-2 dark:bg-gray-800 dark:text-white dark:border-gray-600 dark:hover:bg-gray-700 dark:hover:border-gray-600 dark:focus:ring-gray-700"
       >
         Voeg film toe
       </Link>
@@ -55,6 +86,12 @@ export default function Index() {
       <h2 className="mb-5 text-2xl font-bold text-center">
         Films nu in de Videotheek
       </h2>
+
+      {errorMessage && (
+        <div className="text-red-500 text-sm mb-4 text-center">
+          {errorMessage}
+        </div>
+      )}
 
       <div>
         <Form id="search-form" role="search" className="max-w-sm mx-auto">
@@ -77,6 +114,44 @@ export default function Index() {
       </div>
 
       <br></br>
+
+      <div>
+        <Form
+          id="filter-date"
+          className="max-w-lg mx-auto flex gap-2 items-center"
+        >
+          <input
+            type="number"
+            min="1900"
+            max={currentYear}
+            value={formData.firstDate}
+            name="firstDate"
+            onChange={(e) =>
+              setFormData({ ...formData, [e.target.name]: e.target.value })
+            }
+            className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+          />
+          <input
+            type="number"
+            min="1900"
+            max={currentYear}
+            value={formData.secondDate}
+            onChange={(e) =>
+              setFormData({ ...formData, [e.target.name]: e.target.value })
+            }
+            name="secondDate"
+            className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+          />
+          <button
+            type="submit"
+            className="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-bold rounded-lg text-sm py-2.5 px-5 dark:bg-blue-600 dark:hover:bg-blue-700 focus:outline-none dark:focus:ring-blue-800"
+          >
+            Filter
+          </button>
+        </Form>
+      </div>
+
+      <br></br>
       <hr></hr>
       <br></br>
 
@@ -95,14 +170,14 @@ export default function Index() {
             <div>
               <Link
                 to={`/movies/${video.id}/edit`}
-                className="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 me-2 mb-2 dark:bg-blue-600 dark:hover:bg-blue-700 focus:outline-none dark:focus:ring-blue-800"
+                className="text-white font-bold bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 rounded-lg text-sm px-5 py-2.5 me-2 mb-2 dark:bg-blue-600 dark:hover:bg-blue-700 focus:outline-none dark:focus:ring-blue-800"
                 type="button"
               >
                 Edit
               </Link>
               <Link
                 to={`/movies/${video.id}/delete`}
-                className="focus:outline-none text-white bg-red-700 hover:bg-red-800 focus:ring-4 focus:ring-red-300 font-medium rounded-lg text-sm px-5 py-2.5 me-2 mb-2 dark:bg-red-600 dark:hover:bg-red-700 dark:focus:ring-red-900"
+                className="focus:outline-none font-bold text-white bg-red-700 hover:bg-red-800 focus:ring-4 focus:ring-red-300 rounded-lg text-sm px-5 py-2.5 me-2 mb-2 dark:bg-red-600 dark:hover:bg-red-700 dark:focus:ring-red-900"
                 type="button"
               >
                 Remove
