@@ -3,6 +3,8 @@ import { Form, useActionData, Link } from "@remix-run/react";
 import { redirect } from "@remix-run/node";
 import { PrismaClient } from "@prisma/client";
 
+const prisma = new PrismaClient();
+
 // https://www.kirandev.com/remix/use-action-to-handle-form-submission-in-remix
 export async function action({ request }: ActionArgs) {
   const formData = await request.formData();
@@ -35,7 +37,6 @@ export async function action({ request }: ActionArgs) {
 
   try {
     // https://www.prisma.io/docs/orm/prisma-client/queries/crud#create
-    const prisma = new PrismaClient();
     await prisma.video.create({
       data: {
         Title: title,
@@ -59,7 +60,6 @@ export async function action({ request }: ActionArgs) {
 type ActionData = {
   error?: string;
 };
-
 
 export default function AddVideo() {
   const actionData = useActionData<ActionData>();
@@ -136,13 +136,13 @@ export default function AddVideo() {
       >
         Add video
       </button>
-      <button
-        name="return"
-        type="button"
+      <Link
+        to="/"
         className="text-gray-900 bg-white border border-gray-300 focus:outline-none hover:bg-gray-100 focus:ring-4 focus:ring-gray-100 font-medium rounded-lg text-sm px-5 py-2.5 me-2 mb-2 dark:bg-gray-800 dark:text-white dark:border-gray-600 dark:hover:bg-gray-700 dark:hover:border-gray-600 dark:focus:ring-gray-700"
+        type="button"
       >
-        <Link to="/">Return</Link>
-      </button>
+        Return
+      </Link>
     </Form>
   );
 }

@@ -4,6 +4,8 @@ import { redirect } from "@remix-run/node";
 import { PrismaClient } from "@prisma/client";
 import { useState } from "react";
 
+const prisma = new PrismaClient();
+
 export async function action({ request }: ActionArgs) {
   const formData = await request.formData();
 
@@ -36,7 +38,6 @@ export async function action({ request }: ActionArgs) {
 
   try {
     // https://www.prisma.io/docs/orm/prisma-client/queries/crud#update
-    const prisma = new PrismaClient();
     await prisma.video.update({
       where: {
         id: id,
@@ -67,7 +68,6 @@ export const loader: LoaderFunction = async ({ params }) => {
     return redirect("/");
   }
 
-  const prisma = new PrismaClient();
   const video = await prisma.video.findUnique({
     where: {
       id: videoId,
@@ -183,13 +183,13 @@ export default function EditVideo() {
       >
         Edit video
       </button>
-      <button
-        name="return"
-        type="button"
+      <Link
+        to="/"
         className="text-gray-900 bg-white border border-gray-300 focus:outline-none hover:bg-gray-100 focus:ring-4 focus:ring-gray-100 font-medium rounded-lg text-sm px-5 py-2.5 me-2 mb-2 dark:bg-gray-800 dark:text-white dark:border-gray-600 dark:hover:bg-gray-700 dark:hover:border-gray-600 dark:focus:ring-gray-700"
+        type="button"
       >
-        <Link to="/">Return</Link>
-      </button>
+        Return
+      </Link>
     </Form>
   );
 }
