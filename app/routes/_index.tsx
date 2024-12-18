@@ -21,6 +21,10 @@ type Video = {
 type LoaderData = {
   videos: Video[];
   q: string;
+  page: number;
+  cursor: number;
+  cursorUrl: number;
+  nextPage: number;
 };
 
 const prisma = new PrismaClient();
@@ -31,6 +35,20 @@ export const loader: LoaderFunction = async ({ request }) => {
 
   let firstDate = url.searchParams.get("firstDate") || "1900";
   let secondDate = url.searchParams.get("secondDate") || "2024";
+  let cursorUrl = parseInt(url.searchParams.get("cursor")) || 0;
+
+  const page = url.searchParams.get("page") || null;
+
+  const direction = url.searchParams.get("direction") || null;
+
+  let takeAmount = 10;
+
+  // https://www.prisma.io/docs/orm/prisma-client/queries/pagination#example-paging-backwards-with-cursor-based-pagination
+  if (direction == "forwards") {
+    takeAmount = 10;
+  } else if (direction == "backwards") {
+    takeAmount = -10;
+  }
 
   let error = null;
 
@@ -39,8 +57,8 @@ export const loader: LoaderFunction = async ({ request }) => {
     error = "De datums waren omgewisseld. Deze zijn automatisch gecorrigeerd.";
   }
 
-  // https://www.prisma.io/docs/orm/prisma-client/queries/crud#get-all-records
-  const videos = await prisma.video.findMany({
+  const query = {
+    take: takeAmount,
     where: {
       Title: {
         contains: q,
@@ -50,8 +68,37 @@ export const loader: LoaderFunction = async ({ request }) => {
         lte: parseInt(secondDate),
       },
     },
-  });
-  return { videos, q, error };
+  };
+
+  // https://www.prisma.io/docs/orm/prisma-client/queries/pagination#cursor-based-pagination
+  if (page) {
+    query.cursor = {
+      id: cursorUrl,
+    };
+    query.skip = 1;
+  }
+
+  // https://www.prisma.io/docs/orm/prisma-client/queries/crud#get-all-records
+  const videos = await prisma.video.findMany(query);
+
+  let cursor = null;
+
+  // Pak 10 video's en gebruik hiervan het laatste id wat gevonden is.
+  const countMax = Math.min(videos.length - 1, 9);
+  const lastVideo = videos[countMax];
+  cursor = lastVideo.id;
+
+  if (direction === "backwards") {
+    cursorUrl = cursor - 10;
+  }
+
+  let nextPage = 1;
+
+  if (videos.length < 10) {
+    nextPage = 0;
+  }
+
+  return { videos, q, error, page, cursor, cursorUrl, nextPage };
 };
 
 type ActionData = {
@@ -60,9 +107,11 @@ type ActionData = {
 };
 
 export default function Index() {
-  const { videos, q } = useLoaderData<LoaderData>();
+  const { videos, q, page, cursor, cursorUrl, nextPage } =
+    useLoaderData<LoaderData>();
   const submit = useSubmit();
 
+  console.log("Currunt cursor: " + cursor + ". Cursor from url: " + cursorUrl);
   const currentYear = new Date().getFullYear();
 
   const [formData, setFormData] = useState({
@@ -159,7 +208,38 @@ export default function Index() {
             </Form>
           </div>
         </div>
-        <div className="w-1/5">{/* 20% */}</div>
+        <div className="w-full mt-5 md:mt-0 md:w-1/5">
+          <Link
+            to={
+              parseInt(nextPage) === 0
+                ? "/"
+                : `/?page=${
+                    parseInt(page || "0") + 1
+                  }&cursor=${cursor}&direction=forwards`
+            }
+            className={
+              parseInt(nextPage) === 0
+                ? "bg-blue-800 hover:bg-blue-900 focus:ring-4 focus:ring-blue-400 font-bold rounded-lg text-sm py-2.5 px-5 dark:bg-blue-700 dark:hover:bg-blue-800 focus:outline-none dark:focus:ring-blue-900 text-gray-400 hover:text-gray-400 pointer-events-none mb-3"
+                : "text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-bold rounded-lg text-sm py-2.5 px-5 dark:bg-blue-600 dark:hover:bg-blue-700 focus:outline-none dark:focus:ring-blue-800 mb-3"
+            }
+          >
+            Volgende pagina
+          </Link>
+          <br></br>
+          <br></br>
+          <Link
+            to={
+              parseInt(page) > 1
+                ? `/?page=${parseInt(page) - 1}&cursor=${
+                    cursorUrl + 1
+                  }&direction=backwards`
+                : "/"
+            }
+            className="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-bold rounded-lg text-sm py-2.5 px-5 dark:bg-blue-600 dark:hover:bg-blue-700 focus:outline-none dark:focus:ring-blue-800"
+          >
+            Pagina terug
+          </Link>
+        </div>
       </div>
 
       <br></br>
