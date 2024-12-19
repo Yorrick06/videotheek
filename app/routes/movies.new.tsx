@@ -1,4 +1,4 @@
-import type { ActionArgs } from "@remix-run/node";
+import type { LoaderFunctionArgs } from "@remix-run/node";
 import { Form, useActionData, Link } from "@remix-run/react";
 import { redirect } from "@remix-run/node";
 import { PrismaClient } from "@prisma/client";
@@ -6,7 +6,7 @@ import { PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient();
 
 // https://www.kirandev.com/remix/use-action-to-handle-form-submission-in-remix
-export async function action({ request }: ActionArgs) {
+export async function action({ request }: LoaderFunctionArgs) {
   const formData = await request.formData();
 
   const title = String(formData.get("Title"));
@@ -23,7 +23,7 @@ export async function action({ request }: ActionArgs) {
     );
   }
 
-  const releaseYearInt = parseInt(release_year);
+  const releaseYearInt = Number(release_year);
   const currentYear = new Date().getFullYear();
 
   if (releaseYearInt < 1900 || releaseYearInt > currentYear) {

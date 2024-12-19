@@ -1,4 +1,4 @@
-import type { ActionArgs, LoaderFunction } from "@remix-run/node";
+import type { LoaderFunctionArgs, LoaderFunction } from "@remix-run/node";
 import { Form, useActionData, useLoaderData, Link } from "@remix-run/react";
 import { redirect } from "@remix-run/node";
 import { PrismaClient } from "@prisma/client";
@@ -6,10 +6,10 @@ import { useState } from "react";
 
 const prisma = new PrismaClient();
 
-export async function action({ request }: ActionArgs) {
+export async function action({ request }: LoaderFunctionArgs) {
   const formData = await request.formData();
 
-  const id = parseInt(formData.get("id"));
+  const id = Number(formData.get("id"));
   const title = String(formData.get("Title"));
   const genre = String(formData.get("Genre"));
   const release_year = formData.get("Release_Year");
@@ -24,7 +24,7 @@ export async function action({ request }: ActionArgs) {
     );
   }
 
-  const releaseYearInt = parseInt(release_year);
+  const releaseYearInt = Number(release_year);
   const currentYear = new Date().getFullYear();
 
   if (releaseYearInt < 1900 || releaseYearInt > currentYear) {
@@ -62,9 +62,9 @@ export async function action({ request }: ActionArgs) {
 }
 
 export const loader: LoaderFunction = async ({ params }) => {
-  const videoId = params.id ? parseInt(params.id, 10) : NaN;
+  const videoId = Number(params.id);
 
-  if (isNaN(videoId)) {
+  if (!videoId) {
     return redirect("/");
   }
 

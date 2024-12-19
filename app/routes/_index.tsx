@@ -35,7 +35,7 @@ export const loader: LoaderFunction = async ({ request }) => {
 
   let firstDate = url.searchParams.get("firstDate") || "1900";
   let secondDate = url.searchParams.get("secondDate") || "2024";
-  let cursorUrl = parseInt(url.searchParams.get("cursor")) || 0;
+  let cursorUrl = Number(url.searchParams.get("cursor")) || 0;
 
   const page = url.searchParams.get("page") || null;
 
@@ -94,7 +94,11 @@ export const loader: LoaderFunction = async ({ request }) => {
 
   let nextPage = 1;
 
-  if (videos.length < 10) {
+  const nextVideo = await prisma.video.findUnique({
+    where: { id: cursor + 1 },
+  });
+
+  if (!nextVideo) {
     nextPage = 0;
   }
 
@@ -211,14 +215,14 @@ export default function Index() {
         <div className="w-full mt-5 md:mt-0 md:w-1/5">
           <Link
             to={
-              parseInt(nextPage) === 0
+              Number(nextPage) === 0
                 ? "/"
                 : `/?page=${
-                    parseInt(page || "0") + 1
+                    Number(page || "0") + 1
                   }&cursor=${cursor}&direction=forwards`
             }
             className={
-              parseInt(nextPage) === 0
+              Number(nextPage) === 0
                 ? "bg-blue-800 hover:bg-blue-900 focus:ring-4 focus:ring-blue-400 font-bold rounded-lg text-sm py-2.5 px-5 dark:bg-blue-700 dark:hover:bg-blue-800 focus:outline-none dark:focus:ring-blue-900 text-gray-400 hover:text-gray-400 pointer-events-none mb-3"
                 : "text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-bold rounded-lg text-sm py-2.5 px-5 dark:bg-blue-600 dark:hover:bg-blue-700 focus:outline-none dark:focus:ring-blue-800 mb-3"
             }
@@ -229,8 +233,8 @@ export default function Index() {
           <br></br>
           <Link
             to={
-              parseInt(page) > 1
-                ? `/?page=${parseInt(page) - 1}&cursor=${
+              Number(page) > 1
+                ? `/?page=${Number(page) - 1}&cursor=${
                     cursorUrl + 1
                   }&direction=backwards`
                 : "/"
@@ -257,7 +261,7 @@ export default function Index() {
             </h3>
             <p>Genre: {video.Genre}</p>
             <p>Release Year: {video.Release_Year}</p>
-            <p className="mb-3">{video.Description}</p>
+            <p className="mb-3 truncate">{video.Description}</p>
             <div>
               <Link
                 to={`/movies/${video.id}/edit`}

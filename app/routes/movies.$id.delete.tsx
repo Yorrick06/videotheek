@@ -5,11 +5,7 @@ import { PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient();
 
 export const loader: LoaderFunction = async ({ params }) => {
-  const id = params.id ? parseInt(params.id, 10) : NaN;
-
-  if (isNaN(id)) {
-    return redirect("/");
-  }
+  const id = Number(params.id);
 
   try {
     await prisma.video.delete({
