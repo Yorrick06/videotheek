@@ -1,5 +1,5 @@
 import type { MetaFunction, LoaderFunction } from "@remix-run/node";
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient, Prisma } from "@prisma/client";
 import { useLoaderData, Link, Form, useSubmit } from "@remix-run/react";
 import { useState } from "react";
 
@@ -78,28 +78,32 @@ export const loader: LoaderFunction = async ({ request }) => {
     query.skip = 1;
   }
 
-  // https://www.prisma.io/docs/orm/prisma-client/queries/crud#get-all-records
-  const videos = await prisma.video.findMany(query);
-
+  let videos: Video[] = [];
   let cursor = null;
-
-  // Pak 10 video's en gebruik hiervan het laatste id wat gevonden is.
-  const countMax = Math.min(videos.length - 1, 9);
-  const lastVideo = videos[countMax];
-  cursor = lastVideo.id;
-
-  if (direction === "backwards") {
-    cursorUrl = cursor - 10;
-  }
-
   let nextPage = 1;
 
-  const nextVideo = await prisma.video.findUnique({
-    where: { id: cursor + 1 },
-  });
+  // https://www.prisma.io/docs/orm/prisma-client/queries/crud#get-all-records
+  try {
+    videos = await prisma.video.findMany(query);
 
-  if (!nextVideo) {
-    nextPage = 0;
+    // Pak 10 video's en gebruik hiervan het laatste id wat gevonden is.
+    const countMax = Math.min(videos.length - 1, 9);
+    const lastVideo = videos[countMax];
+    cursor = lastVideo.id;
+
+    if (direction === "backwards") {
+      cursorUrl = cursor - 10;
+    }
+
+    const nextVideo = await prisma.video.findUnique({
+      where: { id: cursor + 1 },
+    });
+
+    if (!nextVideo) {
+      nextPage = 0;
+    }
+  } catch (e) {
+    error = "Er zijn geen video's gevonden.";
   }
 
   return { videos, q, error, page, cursor, cursorUrl, nextPage };
